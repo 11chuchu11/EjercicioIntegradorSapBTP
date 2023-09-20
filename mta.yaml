@@ -1,0 +1,92 @@
+_schema-version: "3.2"
+ID: EjercicioIntegrador
+version: 0.0.1
+modules:
+- name: EjercicioIntegrador-destination-content
+  type: com.sap.application.content
+  requires:
+  - name: EjercicioIntegrador-destination-service
+    parameters:
+      content-target: true
+  - name: EjercicioIntegrador_html_repo_host
+    parameters:
+      service-key:
+        name: EjercicioIntegrador_html_repo_host-key
+  - name: uaa_EjercicioIntegrador
+    parameters:
+      service-key:
+        name: uaa_EjercicioIntegrador-key
+  parameters:
+    content:
+      instance:
+        destinations:
+        - Name: ejercicio_integrador_EjercicioIntegrador_html_repo_host
+          ServiceInstanceName: EjercicioIntegrador-html5-app-host-service
+          ServiceKeyName: EjercicioIntegrador_html_repo_host-key
+          sap.cloud.service: ejercicio-integrador
+        - Authentication: OAuth2UserTokenExchange
+          Name: ejercicio_integrador_uaa_EjercicioIntegrador
+          ServiceInstanceName: EjercicioIntegrador-xsuaa-service
+          ServiceKeyName: uaa_EjercicioIntegrador-key
+          sap.cloud.service: ejercicio-integrador
+        existing_destinations_policy: ignore
+  build-parameters:
+    no-source: true
+- name: EjercicioIntegrador-app-content
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: EjercicioIntegrador_html_repo_host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - ejerciciointegrador.zip
+      name: ejerciciointegrador
+      target-path: resources/
+- name: ejerciciointegrador
+  type: html5
+  path: ejercicio-integrador
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+resources:
+- name: EjercicioIntegrador-destination-service
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: true
+      init_data:
+        instance:
+          destinations:
+          - Authentication: NoAuthentication
+            Name: ui5
+            ProxyType: Internet
+            Type: HTTP
+            URL: https://ui5.sap.com
+          existing_destinations_policy: update
+      version: 1.0.0
+    service: destination
+    service-name: EjercicioIntegrador-destination-service
+    service-plan: lite
+- name: EjercicioIntegrador_html_repo_host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-name: EjercicioIntegrador-html5-app-host-service
+    service-plan: app-host
+- name: uaa_EjercicioIntegrador
+  type: org.cloudfoundry.managed-service
+  parameters:
+    path: ./xs-security.json
+    service: xsuaa
+    service-name: EjercicioIntegrador-xsuaa-service
+    service-plan: application
+parameters:
+  deploy_mode: html5-repo
